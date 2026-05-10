@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  frontend:
+    container_name: front-end-redbus
+    build: 
+      context: ./front-end-redbus
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:3020
+    depends_on:
+      backend:
+        condition: service_healthy
+    cap_drop:
+      - ALL
+    
+    security_opt:
+      - no-new-privileges:true
+    user: "1001:1001"
+    tmpfs:
+      - /tmp:rw,noexec,nosuid
+    restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  backend:
+    container_name: back-end-redbus
+    build: 
+      context: ./back-end-redbus
+      dockerfile: Dockerfile
+    ports:
+      - "3020:3020"
+    env_file:
+      - ./back-end-redbus/.env.docker
+    environment:
+      - MONGODB_URI=mongodb://${MONGO_USER:-admin}:${MONGO_PASSWORD:-password}@mongodb:27017/${MONGO_DB:-redbus}?authSource=admin
+      - NODE_ENV=production
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    cap_drop:
+      - ALL
+    
+    security_opt:
+      - no-new-privileges:true
+    user: "1001:1001"
+    tmpfs:
+      - /tmp:rw,noexec,nosuid
+    restart: unless-stopped
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3020/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  mongodb:
+    container_name: mongodb
+    image: mongo:7
+    restart: unless-stopped
+    # ✅ No ports exposed to host - only accessible via Docker network
+    expose:
+      - "27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-password}
+      MONGO_INITDB_DATABASE: ${MONGO_DB:-redbus}
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - SETGID
+      - SETUID
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  mongodb_data:
+    driver: local
+  mongodb_config:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
