@@ -21,9 +21,9 @@ pipeline {
 
     stages {
 
-        // ─────────────────────────────────────────────
+        
         stage('Checkout') {
-        // ─────────────────────────────────────────────
+        
             steps {
                 checkout scm
                 script {
@@ -36,9 +36,9 @@ pipeline {
             }
         }
 
-        // ─────────────────────────────────────────────
+        
         stage('Install Dependencies') {
-        // ─────────────────────────────────────────────
+        
             parallel {
                 stage('Backend: Install') {
                     steps {
@@ -57,9 +57,9 @@ pipeline {
             }
         }
 
-        // ─────────────────────────────────────────────
+        
         stage('Test') {
-        // ─────────────────────────────────────────────
+        
             parallel {
                 stage('Backend: Test') {
                     steps {
@@ -78,9 +78,9 @@ pipeline {
             }
         }
 
-        // ─────────────────────────────────────────────
+        
         stage('Docker Build') {
-        // ─────────────────────────────────────────────
+        
             when {
                 anyOf {
                     branch 'master'
@@ -115,9 +115,9 @@ pipeline {
             }
         }
 
-        // ─────────────────────────────────────────────
+       
         stage('Push to Docker Hub') {
-        // ─────────────────────────────────────────────
+        
             when {
                 anyOf {
                     branch 'master'
@@ -135,9 +135,9 @@ pipeline {
             }
         }
 
-        // ─────────────────────────────────────────────
+        
         stage('Validate K8s Manifests') {
-        // ─────────────────────────────────────────────
+        
             steps {
                 sh """
                     kubectl apply --dry-run=client -f k8s/namespace.yaml
@@ -151,12 +151,9 @@ pipeline {
             }
         }
 
-        // ─────────────────────────────────────────────
+        
         stage('Update K8s Manifests (GitOps)') {
-        // ─────────────────────────────────────────────
-        // Bumps the image tag in manifests and pushes back to git.
-        // ArgoCD detects the change and deploys automatically.
-        // ─────────────────────────────────────────────
+        
             when {
                 anyOf {
                     branch 'master'
@@ -184,14 +181,9 @@ pipeline {
             }
         }
 
-        // ─────────────────────────────────────────────
+        
         stage('ArgoCD Sync') {
-        // ─────────────────────────────────────────────
-        // Optional: triggers ArgoCD sync immediately instead of
-        // waiting for the poll interval.
-        // Requires argocd CLI on the Jenkins agent and a valid
-        // ARGOCD_AUTH_TOKEN credential in Jenkins.
-        // ─────────────────────────────────────────────
+        
             when {
                 anyOf {
                     branch 'master'
@@ -211,7 +203,7 @@ pipeline {
             }
         }
 
-    } // end stages
+    } 
 
     post {
         always {
