@@ -199,6 +199,38 @@ Zero-downtime rolling updates — while one pod terminates, traffic continues to
 
 ---
 
+## 📊 Monitoring — Prometheus & Grafana
+
+This project is monitored using **Prometheus** for metrics scraping and **Grafana** for dashboards, deployed inside the same Kubernetes cluster.
+
+### Setup (Helm — fastest way)
+
+```bash
+# Add the helm repo
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+# Install kube-prometheus-stack (includes Prometheus + Grafana + Alertmanager)
+helm install monitoring prometheus-community/kube-prometheus-stack \
+  --namespace monitoring \
+  --create-namespace
+
+# Access Grafana dashboard
+kubectl port-forward svc/monitoring-grafana 3001:80 -n monitoring
+# Open: http://localhost:3001
+# Default login → user: admin  password: prom-operator
+```
+
+### What gets monitored
+
+| Metric | Tool | Description |
+|--------|------|-------------|
+| Pod CPU & Memory | Prometheus | Per-pod resource usage across `redbus` namespace |
+| HTTP Request Rate | Prometheus | Requests/sec hitting backend and frontend pods |
+| Pod Restarts | Prometheus | Alerts if any pod crashes repeatedly |
+| Node Health | Prometheus | Cluster node CPU, memory, disk |
+| Visual Dashboards | Grafana | Pre-built Kubernetes dashboards (ID: 315, 6417) |
+
 ## 👤 Author
 
 **Harshmeet Singh** — B.Tech CSE · DevOps Engineer
